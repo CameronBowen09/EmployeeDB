@@ -1134,3 +1134,232 @@ where pls14.visits >= 0 and pls09.visits >= 0
 group by pls14.stabr
 having sum(pls14.visits) > 50000000
 order by pct_change desc;
+
+-- Chapter 9
+-- Importing the FSIS Meat, Poultry, and Egg Inspection Directory
+-- https://catalog.data.gov/dataset/meat-poultry-and-egg-inspection-directory-by-establishment-name
+create table meat_poultry_egg_inspect (
+    est_number varchar(50) constraint est_number_key primary key,
+    company varchar(100),
+    street varchar(100),
+    city varchar(30),
+    st varchar(2),
+    zip varchar(5),
+    phone varchar(14),
+    grant_date date,
+    activities text,
+    dbas text
+);
+
+copy meat_poultry_egg_inspect
+from 'C:\Users\User\Desktop\SQL\Analysis\MPI_Directory_by_Establishment_Name.csv'
+with (FORMAT csv, header, delimiter ',');
+
+create index company_idx on meat_poultry_egg_inspect (company);
+
+-- Count the rows imported:
+select count(*) from meat_poultry_egg_inspect;
+
+-- Finding multiple companies at the same address
+select company,
+       street,
+       city,
+       st,
+       count(*) as address_count
+from meat_poultry_egg_inspect
+group by company, street, city, st
+having count(*) > 1
+order by company, street, city, st;
+
+-- Grouping and counting states
+select st, 
+       count(*) as st_count
+from meat_poultry_egg_inspect
+group by st
+order by st;
+
+-- Using IS NULL to find missing values in the st column
+select est_number,
+       company,
+       city,
+       st,
+       zip
+from meat_poultry_egg_inspect
+where st is NULL;
+
+-- Using GROUP BY and count() to find inconsistent company names
+select company,
+       count(*) as company_count
+from meat_poultry_egg_inspect
+group by company
+order by company asc;
+
+-- Using length() and count() to test the zip column
+select length(zip),
+       count(*) as length_count
+from meat_poultry_egg_inspect
+group by length(zip)
+order by length(zip) asc;
+
+-- Filtering with length() to find short zip values
+select st,
+       count(*) as st_count
+from meat_poultry_egg_inspect
+where length(zip) < 5
+group by st
+order by st asc;
+
+-- Backing up a table
+create table meat_poultry_egg_inspect_backup as
+select * from meat_poultry_egg_inspect;
+
+-- Check number of records:
+select 
+    (select count(*) from meat_poultry_egg_inspect) as original,
+    (select count(*) from meat_poultry_egg_inspect_backup) as backup;
+	
+-- Creating and filling the st_copy column with ALTER TABLE and UPDATE
+alter table meat_poultry_egg_inspect add column st_copy varchar(2);
+
+update meat_poultry_egg_inspect
+set st_copy = st;
+
+-- Checking values in the st and st_copy columns
+select st,
+       st_copy
+from meat_poultry_egg_inspect
+order by st;
+
+-- Updating the st column for three establishments
+update meat_poultry_egg_inspect
+set st = 'MN'
+where est_number = 'V18677A';
+
+update meat_poultry_egg_inspect
+set st = 'AL'
+where est_number = 'M45319+P45319';
+
+update meat_poultry_egg_inspect
+set st = 'WI'
+where est_number = 'M263A+P263A+V263A';
+
+-- Restoring original st column values
+-- Restoring from the column backup
+update meat_poultry_egg_inspect
+set st = st_copy;
+
+-- Restoring from the table backup
+update meat_poultry_egg_inspect original
+set st = backup.st
+from meat_poultry_egg_inspect_backup backup
+where original.est_number = backup.est_number;
+
+-- Creating and filling the company_standard column
+alter table meat_poultry_egg_inspect add column company_standard varchar(100);
+
+update meat_poultry_egg_inspect
+set company_standard = company;
+
+-- Use UPDATE to modify field values that match a string
+update meat_poultry_egg_inspect
+set company_standard = 'Armour-Eckrich Meats'
+where company like 'Armour%';
+
+select company, company_standard
+from meat_poultry_egg_inspect
+where company like 'Armour%';
+
+-- Creating and filling the zip_copy column
+alter table meat_poultry_egg_inspect add column zip_copy varchar(5);
+
+update meat_poultry_egg_inspect
+set zip_copy = zip;
+
+-- Modify codes in the zip column missing two leading zeros
+update meat_poultry_egg_inspect
+set zip = '00' || zip
+where st in('PR','VI') and length(zip) = 3;
+
+-- Modify codes in the zip column missing one leading zero
+update meat_poultry_egg_inspect
+set zip = '0' || zip
+where st in('CT','MA','ME','NH','NJ','RI','VT') and length(zip) = 4;
+
+-- Creating and filling a state_regions table
+create table state_regions (
+    st varchar(2) constraint st_key primary key,
+    region varchar(20) not NULL
+);
+
+copy state_regions
+from 'C:\Users\User\Desktop\SQL\Analysis\state_regions.csv'
+with (FORMAT csv, header, delimiter ',');
+
+-- Adding and updating an inspection_date column
+alter table meat_poultry_egg_inspect add column inspection_date date;
+
+update meat_poultry_egg_inspect inspect
+set inspection_date = '2019-12-01'
+where exists (select state_regions.region
+              from state_regions
+              where inspect.st = state_regions.st 
+                    and state_regions.region = 'New England');
+					
+-- Viewing updated inspection_date values
+select st, inspection_date
+from meat_poultry_egg_inspect
+group by st, inspection_date
+order by st;
+
+-- Delete rows matching an expression
+delete from meat_poultry_egg_inspect
+where st in('PR','VI');
+
+-- Remove a column from a table using DROP
+alter table meat_poultry_egg_inspect drop column zip_copy;
+
+-- Remove a table from a database using DROP
+drop table meat_poultry_egg_inspect_backup;
+
+-- Demonstrating a transaction block
+-- Start transaction and perform update
+start transaction;
+
+update meat_poultry_egg_inspect
+set company = 'AGRO Merchantss Oakland LLC'
+where company = 'AGRO Merchants Oakland, LLC';
+
+-- view changes
+select company
+from meat_poultry_egg_inspect
+where company like 'AGRO%'
+order by company;
+
+-- Revert changes
+ROLLBACK;
+
+-- See restored state
+select company
+from meat_poultry_egg_inspect
+where company like 'AGRO%'
+order by company;
+
+-- Alternately, commit changes at the end:
+start transaction;
+
+update meat_poultry_egg_inspect
+set company = 'AGRO Merchants Oakland LLC'
+where company = 'AGRO Merchants Oakland, LLC';
+
+commit;
+
+-- Backing up a table while adding and filling a new column
+create table meat_poultry_egg_inspect_backup as
+select *,
+       '2018-02-07'::date as reviewed_date
+from meat_poultry_egg_inspect;
+
+-- Swapping table names using ALTER TABLE
+alter table meat_poultry_egg_inspect rename to meat_poultry_egg_inspect_temp;
+alter table meat_poultry_egg_inspect_backup rename to meat_poultry_egg_inspect;
+alter table meat_poultry_egg_inspect_temp rename to meat_poultry_egg_inspect_backup;

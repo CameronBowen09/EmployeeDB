@@ -1,6 +1,24 @@
-create database DatingDB;
+create database AdvancedDB;
 
--- Create the tables
+-- 1) Checking Profession duplications
+select prof_id, count(prof_id)
+from my_contacts
+group by prof_id
+having count(prof_id)> 1
+order by prof_id;
+
+-- 2) Delete duplicate intrest rows in table
+delete from intrests
+where intrest in
+(select intrest
+from
+(select intrest,
+row_number() over(partition by intrest
+order by intrests) as row_num
+from intrests) t
+where t.row_num > 1);
+
+-- 3) Create commands that set up tables 
 create table my_contacts (
     contact_id bigserial constraint contact_id_key primary key,
     last_name varchar(20) not null,
@@ -11,7 +29,7 @@ create table my_contacts (
     birthday varchar(100) not null,
     prof_id integer not null references profession (prof_id),
     zip_code integer not null references zip_code (zip_code),
-   status_id integer not null references status (status_id)
+    status_id integer not null references status (status_id)
 );
 
 create table profession (
@@ -52,6 +70,7 @@ create table seeking (
     seeking varchar(250) not null
 );
 
+-- 4) Insert data into the created tables
 insert into profession (profession)
 values 	
         ('Engineer'),
@@ -312,38 +331,22 @@ values
         (2),
         (3),
         (3);
+		
+-- 5) Using recursive queries with the created tables
+with recursive contacts as (
+select contact_id, status_id, first_name
+from my_contacts
+where contact_id = 2
+union
+select e.contact_id, e.status_id, e.first_name
+from my_contacts e
+inner join contacts s on s.contact_id = e.status_id)
+select *
+from contacts;
 
-select prof.profession, zip.zip_code, zip.city, zip.province, stat.status, 
-intrests.intrest, seeking.seeking
-from profession as prof left join my_contacts as con
-	on prof.prof_id = con.prof_id
-left join zip_code as zip
-	on con.zip_code = zip.zip_code
-left join status as stat
-	on con.status_id = stat.status_id
-left join contact_intrest as con_int
-	on con.contact_id = con_int.contact_id
-left join intrests
-	on con_int.intrest_id = intrests.intrest_id
-left join contact_seeking as con_seek
-	on con.contact_id =con_seek.contact_id
-left join seeking
-	on con_seek.seeking_id =seeking.seeking_id;
-	
-select con.contact_id, con.last_name, con.first_name, con.phone, con.email, con.gender, 
-con.birthday, prof.profession, zip.zip_code, zip.city, zip.province, stat.status, 
-intrests.intrest, seeking.seeking
-from my_contacts as con left join profession as prof
-	on con.prof_id = prof.prof_id
-left join zip_code as zip
-	on con.zip_code = zip.zip_code
-left join status as stat
-	on con.status_id = stat.status_id
-left join contact_intrest as con_int
-	on con.contact_id = con_int.contact_id
-left join intrests
-	on con_int.intrest_id = intrests.intrest_id
-left join contact_seeking as con_seek
-	on con.contact_id =con_seek.contact_id
-left join seeking
-	on con_seek.seeking_id =seeking.seeking_id;
+-- 6) Using fetch command to limit query results
+select contact_id, zip_code
+from my_contacts
+order by contact_id
+fetch first row only;
+		

@@ -433,5 +433,95 @@ select avg (score) from scores
 );
 
 -- 20) rollup
+select first_name, last_name, count(*)
+from my_contacts
+group by rollup(first_name, last_name);
 
+-- 21) cube
+select first_name, last_name, Count(*)
+from my_contacts
+group by cube(first_name, last_name);
 
+-- 22) index
+create index my_contacts_index on my_contacts(phone);
+
+-- 23) Having clause
+select first_name, avg(contact_id)
+from my_contacts
+group by first_name
+having count(*)>5;
+
+-- 24) Triggers
+create or replace function demo()
+returns trigger as
+$$
+begin
+insert into demo1(col1,col2,col3)
+values(new.col1,new.col2,current_date);
+return new;
+end;
+$$
+language 'plpgsql';
+
+create trigger demo_trigger
+after insert
+on my_contacts
+for each row
+execute procedure demo();
+
+-- 25) Missing values in a sequence
+select contact_id + 1
+from my_contacts a
+where not exists (
+select NULL
+from my_contacts b
+where a.contact_id = b.contact_id + 1)
+order by contact_id;
+
+-- 26) RANK() function
+select first_name, email, phone, profession.prof_id,
+rank () over (
+partition by first_name
+order by phone)
+from my_contacts
+inner join profession using (prof_id);
+
+-- 27) dense_rank()
+select first_name, email, phone, profession.prof_id,
+dense_rank () over (
+partition by first_name
+order by phone )
+from my_contacts
+inner join profession using (prof_id);
+
+-- 28) first_value()
+select first_name, email, phone, profession.prof_id,
+first_value(phone) over (
+partition by first_name
+order by phone) as phone_number
+from my_contacts
+inner join profession using (prof_id);
+
+-- 29) last_value()
+select first_name, email, phone, profession.prof_id,
+last_value(phone) over (
+partition by first_name
+order by phone 
+range between unbounded preceding and unbounded
+following) as phone_number
+from my_contacts
+inner join profession using (prof_id);
+
+-- 30) Explain statement
+select * from emp1; 
+query PLAN Seq Scan on emp1 (cost=0.00..451.00 rows=15000 width=364)
+
+-- 31) create role
+create role joe
+LOGIN
+password 'password123';
+select rolname from pg_roles;
+
+-- 32) group roles
+create role employee;
+grant employee to jeff; 

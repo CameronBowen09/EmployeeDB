@@ -350,3 +350,88 @@ from my_contacts
 order by contact_id
 fetch first row only;
 		
+-- 7) Expert inner join query
+select status_id, first_name
+from my_contacts
+inner join my_contacts on status.status_id =
+my_contacts.status_id
+order by my_contacts.status_id;
+
+-- 8) Advanced self-join query and alies
+select c1.first_name, c2.last_name, c1.birthday
+from my_contacts c1
+inner join my_contacts c2 on c1.birthday <>
+c2.last_name
+and c1.first_name = c2.last_name;
+
+-- 9) Full outer join query
+select e.first_name, e.birthday
+from my_contacts e
+full outer join my_contacts d on d.birthday =
+e.birthday;
+
+-- 10) Advanced where clause in full outer join query
+select e.first_name, e.birthday
+from my_contacts e
+full outer join my_contacts d on d.birthday =
+e.birthday
+where
+e.first_name is  NULL;
+
+-- 11) Advanced query using the left join clause
+select my_contacts.first_name, my_contacts.last_name, profession.prof_id, profession.profession
+FROM
+my_contacts
+LEFT JOIN profession ON my_contacts.prof_id =
+profession.prof_id;
+
+-- 12) Implementing the cross join query
+create table Labels (label CHAR(10) primary key);
+create table Scores (score INT primary key);
+insert into Labels (label)
+values ('Fahr'), ('Cels');
+insert into Scores (score)
+values (1), (2);
+select * from Labels cross join Scores;
+
+-- 13) Elegant natural join query
+select * from my_contacts natural join profession;
+
+-- 14) Applying the inion operator to multiple advanced queries
+select * from intrests
+union all
+select *
+from profession
+order by profession.prof_id asc;
+
+-- 15) Use a query result to create a table
+select Labels.Label, Score
+into labels
+from scores
+where scores>avg(score);
+
+-- 16) Implementing math functions with queries
+select avg (score) from scores;
+select random() * 100 + 1 as RAND_1_100;
+
+-- 17) Using the advanced subquery in PostgreSQL
+select score
+from scores
+where score > (
+select avg (score) FROM scores
+);
+
+-- 18) Querying Stats on the Postgre DB
+select first_name, last_name from my_contacts order by
+last_name desc limit 1;
+
+-- 19) Using PostgreSQL SELECT DISTINCT clause
+select distinct score
+from scores
+where score > (
+select avg (score) from scores
+);
+
+-- 20) rollup
+
+

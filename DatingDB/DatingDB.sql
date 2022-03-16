@@ -1,3 +1,4 @@
+-- Create the database
 create database DatingDB;
 
 -- Create the tables

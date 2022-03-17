@@ -1,6 +1,3 @@
--- Create the database 
-create database DatingDB;
-
 -- Create the tables
 create table my_contacts (
     contact_id bigserial constraint contact_id_key primary key,
@@ -53,6 +50,9 @@ create table seeking (
     seeking varchar(250) not null
 );
 
+-- 4)
+-- Use the insert into clause to choose the table you want to add values into
+-- Use the values caluse to declare the values that you want to add into the table
 insert into profession (profession)
 values 	
         ('Engineer'),
@@ -314,37 +314,14 @@ values
         (3),
         (3);
 
-select prof.profession, zip.zip_code, zip.city, zip.province, stat.status, 
-intrests.intrest, seeking.seeking
-from profession as prof left join my_contacts as con
-	on prof.prof_id = con.prof_id
-left join zip_code as zip
-	on con.zip_code = zip.zip_code
-left join status as stat
-	on con.status_id = stat.status_id
-left join contact_intrest as con_int
-	on con.contact_id = con_int.contact_id
-left join intrests
-	on con_int.intrest_id = intrests.intrest_id
-left join contact_seeking as con_seek
-	on con.contact_id =con_seek.contact_id
-left join seeking
-	on con_seek.seeking_id =seeking.seeking_id;
-	
-select con.contact_id, con.last_name, con.first_name, con.phone, con.email, con.gender, 
-con.birthday, prof.profession, zip.zip_code, zip.city, zip.province, stat.status, 
-intrests.intrest, seeking.seeking
-from my_contacts as con left join profession as prof
-	on con.prof_id = prof.prof_id
-left join zip_code as zip
-	on con.zip_code = zip.zip_code
-left join status as stat
-	on con.status_id = stat.status_id
-left join contact_intrest as con_int
-	on con.contact_id = con_int.contact_id
-left join intrests
-	on con_int.intrest_id = intrests.intrest_id
-left join contact_seeking as con_seek
-	on con.contact_id = con_seek.contact_id
-left join seeking
-	on con_seek.seeking_id = seeking.seeking_id;
+-- 11)
+select my_contacts.first_name, my_contacts.last_name, profession.prof_id, profession.profession
+from my_contacts
+left join profession on my_contacts.prof_id = profession.prof_id;		
+
+-- 30)
+select * from my_contacts
+order by contact_id desc;
+-- This query selects all the columns and rows in the selected table and will display them in
+-- in desending order by contact id you can put many queried behind this in order to get values
+-- that you want to see in the table and what order you want them in.

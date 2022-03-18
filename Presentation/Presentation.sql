@@ -315,13 +315,15 @@ values
         (3);
 
 -- 11)
-select my_contacts.first_name, my_contacts.last_name, profession.prof_id, profession.profession
+select my_contacts.first_name, my_contacts.last_name, 
+       profession.prof_id, profession.profession
 from my_contacts
 left join profession on my_contacts.prof_id = profession.prof_id;		
 
 -- 30)
 select * from my_contacts
-order by contact_id desc;
+Seq Scan on my_contacts (cost=0.00..1.43 rows=43 width=634)
 -- This query selects all the columns and rows in the selected table and will display them in
--- in desending order by contact id you can put many queried behind this in order to get values
--- that you want to see in the table and what order you want them in.
+-- The Seq Scan operation scans the entire relation (table) as stored on disk 
+-- (like TABLE ACCESS FULL ). The Index Scan performs a B-tree traversal, walks through the 
+-- leaf nodes to find all matching entries, and fetches the corresponding table data

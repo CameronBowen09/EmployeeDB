@@ -1,4 +1,4 @@
--- Create the tables
+-- Create the tabls
 create table my_contacts (
     contact_id bigserial constraint contact_id_key primary key,
     last_name varchar(20) not null,
